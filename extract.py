@@ -4,28 +4,26 @@ import tensorflow as tf
 from scipy.io import savemat
 from scipy.io import loadmat
 
-from vgg16_extractor import *
+from vgg16_pool4_extractor import *
 
 if __name__ == '__main__':
-    image_set = loadmat('image_set.mat')
+    image_set = loadmat('data/image_set.mat')
     del image_set['__header__']
     del image_set['__version__']
     del image_set['__globals__']
     
-    inputs = tf.placeholder(tf.float32, shape = [None, 224, 224, 3])
-    extractor = vgg16_extractor(inputs)
-    outputs_flat = flatten(extractor.pool5)    
-    
     with tf.Session() as sess:
         
-        extractor.load_weights('vgg16_weights.npz', sess)
-        
+        inputs = tf.placeholder(tf.float32, shape = [None, 224, 224, 3])
+        extractor = vgg16_extractor(inputs, 'data/vgg16_weights.npz', sess)
+        f_maps= extractor.f_maps
+    
         batch_size = 25    
         for artist in image_set.keys():
-            feature_maps[artist] = np.zeros([0, outputs_flat.shape[1]]) 
+            feature_maps[artist] = np.zeros([0] + list(f_maps.shape)[1:]) 
             for i in range(int(image_set[artist].shape[0]/batch_size)):
                 batch = image_set[artist][i*batch_size:(i+1)*batch_size]
-                feature_maps[artist] = np.vstack((feature_maps[artist], sess.run(outputs_flat, feed_dict={inputs: batch})))
+                feature_maps[artist] = np.concatenate((feature_maps[artist], sess.run(f_maps, feed_dict={inputs: batch})),axis=0)
                 print(str((i+1)*100/(image_set[artist].shape[0]/batch_size)) + '% completed for ' + str(artist)) 
                 
-        savemat('test', feature_maps)
+        savemat('data/vgg_pool4_outputs_2', feature_maps)
