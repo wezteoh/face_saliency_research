@@ -85,7 +85,7 @@ class tl_face_classifier:
             
                 self.train_step.run(feed_dict={self.f_maps:fullbatch, self.labels_1hot:train_classes_1hot})
     
-                weight_names = ['fc1w', 'fc1b', 'fc3w', 'fc3b']
+                weight_names = ['fc1b', 'fc1w', 'fc3b', 'fc3w']
                 best_validation_cost = 1E10
                 if (j+1)%10 == 0:
                     print('iteration'+str(j+1))
@@ -101,12 +101,12 @@ class tl_face_classifier:
                         for i in range(len(self.train_layers.parameters)):
                             best_weights[weight_names[i]] = sess.run(self.train_layers.parameters[i])
                             #savemat('fcl_weights', best_weights)
-            savemat('fcl_weights', best_weights)               
+            np.save('fcl_weights.npy', best_weights)               
 
     def load_weights(self, weight_file, sess):
-        weights = loadmat(weight_file)
+        weights = np.load(weight_file).item()
         keys = sorted(weights.keys())
-        for i in range(len(self.parameters)):
+        for i in range(len(self.train_layers.parameters)):
             print (i, keys[i], np.shape(weights[keys[i]]))
             sess.run(self.train_layers.parameters[i].assign(weights[keys[i]]))
                               
@@ -125,12 +125,12 @@ class tl_face_classifier:
             test_set = np.concatenate((test_set, test_class_set), axis=0)
 
         with tf.Session() as sess:
-            self.load_weights('fcl_weights.mat', sess)
-            test_accuracy = sess.run(self.accuracy, feed_dict={self.f_maps:test_set, labels_1hot:test_classes_1hot})
-            print('test accuracy is {}'.format(train_accuracy))
+            self.load_weights('fcl_weights.npy', sess)
+            test_accuracy = sess.run(self.accuracy, feed_dict={self.f_maps:test_set, self.labels_1hot:test_classes_1hot})
+            print('test accuracy is {}'.format(test_accuracy))
 
 
-feature_maps = loadmat('data/vgg_pool5_outputs_2.mat')
+feature_maps = loadmat('vgg_pool5_outputs.mat')
 del feature_maps['__header__']
 del feature_maps['__version__']
 del feature_maps['__globals__']
@@ -142,6 +142,7 @@ classifier1 = tl_face_classifier(feature_maps, 15)
 classifier1.train_graph(0.001)
 classifier1.predict_graph()
 classifier1.train(70, 15, 50, iter=300)
+
 classifier1.test()
 
 
