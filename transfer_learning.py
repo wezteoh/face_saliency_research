@@ -28,7 +28,7 @@ class tl_face_classifier:
         decay_penalty = decay_lam*(tf.reduce_sum(tf.square(self.train_layers.fc1w))+tf.reduce_sum(tf.square(self.train_layers.fc3w))) \
                                 #+ decay_lam*tf.reduce_sum(tf.square(W_fc2))
         self.cost = cross_entropy + decay_penalty
-        self.train_step = tf.train.GradientDescentOptimizer(rate).minimize(self.cost)
+        self.train_step = tf.train.MomentumOptimizer(rate,1.0).minimize(self.cost)
         
     def predict_graph(self):
         correct_prediction = tf.equal(tf.argmax(self.train_layers.fc3l,1), tf.argmax(self.labels_1hot,1))
@@ -87,6 +87,7 @@ class tl_face_classifier:
     
                 weight_names = ['fc1b', 'fc1w', 'fc3b', 'fc3w']
                 best_validation_cost = 1E10
+                best_validation_accuracy = 0
                 if (j+1)%10 == 0:
                     print('iteration'+str(j+1))
                     train_accuracy = sess.run(self.accuracy, feed_dict={self.f_maps:train_set, self.labels_1hot:classes_1hot})
@@ -95,12 +96,13 @@ class tl_face_classifier:
                     print('training accuracy is {}'.format(train_accuracy))
                     print('validation accuracy is {}'.format(validation_accuracy))
                     print('validation cost is {}'.format(validation_cost))
-                    if validation_cost < best_validation_cost:
-                        best_validation_cost = validation_cost
+                    if validation_accuracy > best_validation_accuracy:
+                        best_validation_accuracy = validation_accuracy
                         best_weights = {}
                         for i in range(len(self.train_layers.parameters)):
                             best_weights[weight_names[i]] = sess.run(self.train_layers.parameters[i])
                             #savemat('fcl_weights', best_weights)
+            print('best validation accuracy is {}'.format(best_validation_accuracy))
             np.save('fcl_weights.npy', best_weights)               
 
     def load_weights(self, weight_file, sess):
@@ -139,9 +141,9 @@ np.random.seed(42)
 for artist in feature_maps:
     np.random.shuffle(feature_maps[artist])
 classifier1 = tl_face_classifier(feature_maps, 15)
-classifier1.train_graph(0.001)
+classifier1.train_graph(5E-6, 1E-3)
 classifier1.predict_graph()
-classifier1.train(70, 15, 50, iter=300)
+classifier1.train(70, 15, 50, iter=1300)
 
 classifier1.test()
 
