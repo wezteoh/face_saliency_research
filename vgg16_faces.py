@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 class vgg16:
-    def __init__(self, imgs, no_classes, train_indicator=True):
+    def __init__(self, imgs, no_classes, keep_prob=1.0, train_indicator=True):
         self.imgs = imgs
         self.parameters = []
         self.parameters2 = []
@@ -10,6 +10,7 @@ class vgg16:
         training = train_indicator
         self.preprocess()
         self.convlayers(training=train_indicator) 
+        self.keep_prob = keep_prob
         self.fc_layers(training=train_indicator)  
         self.all_parameters = self.parameters + self.parameters2       
     
@@ -212,16 +213,16 @@ class vgg16:
             self.fc1 = tf.nn.relu(fc1l)
             self.parameters += [self.fc1b, self.fc1w]
 
-        # # fc2
-        # with tf.name_scope('fc2') as scope:
-        #     fc2w = tf.Variable(tf.truncated_normal([4096, 4096],
-        #                                                  dtype=tf.float32,
-        #                                                  stddev=1e-1), name='weights')
-        #     fc2b = tf.Variable(tf.constant(1.0, shape=[4096], dtype=tf.float32),
-        #                          trainable=True, name='biases')
-        #     fc2l = tf.nn.bias_add(tf.matmul(self.fc1, fc2w), fc2b)
-        #     self.fc2 = tf.nn.relu(fc2l)
-        #     self.parameters += [fc2w, fc2b]
+        # fc2
+        with tf.name_scope('fc2') as scope:
+            self.fc2w = tf.Variable(tf.truncated_normal([4096, 4096],
+                                                         dtype=tf.float32,
+                                                         stddev=1e-1), name='weights')
+            self.fc2b = tf.Variable(tf.constant(1.0, shape=[4096], dtype=tf.float32),
+                                 trainable=True, name='biases')
+            self.fc2l = tf.nn.bias_add(tf.matmul(self.fc1, self.fc2w), self.fc2b)
+            self.fc2 = tf.nn.relu(self.fc2l)
+            self.parameters += [self.fc2w, self.fc2b]
 
         # fc3
         with tf.name_scope('fc3') as scope:
@@ -230,10 +231,18 @@ class vgg16:
                                                          stddev=1e-1), name='weights', trainable=training)
             self.fc3b = tf.Variable(tf.constant(1.0, shape=[self.output_shape], dtype=tf.float32),\
                                  trainable=training, name='biases')
-            self.fc3l = tf.nn.bias_add(tf.matmul(self.fc1, self.fc3w), self.fc3b)
+            self.fc3l = tf.nn.bias_add(tf.matmul(self.fc2, self.fc3w), self.fc3b)
             self.parameters += [self.fc3b, self.fc3w]
+            
+        self.fc3l_drop = tf.nn.dropout(self.fc3l, self.keep_prob)
 
-
+    # def load_weights(self, weight_file1, sess):
+    #     weights = np.load(weight_file1).item()
+    #     keys = sorted(weights.keys())
+    #     for i in range(len(self.parameters)):
+    #         print (i, keys[i], np.shape(weights[keys[i]]))
+    #         sess.run(self.parameters[i].assign(weights[keys[i]]))
+            
     def load_weights(self, weight_file1, weight_file2, sess):
         weights = dict(np.load(weight_file1))
         weights.update(np.load(weight_file2).item())

@@ -47,18 +47,19 @@ if not os.path.exists("images"):
     
 
 # 100 images are obtained for each of the artists here as initial dataset
-actors = ['Daniel Radcliffe', 'Gerard Butler', 'Michael Vartan', 'Matt Damon', 'Nicolas Cage']
-actresses = ['Cheryl Hines', 'Selena Gomez', 'Angie Harmon', 'Anne Hathaway', 'Jennifer Aniston']
-
+# actors = ['Daniel Radcliffe', 'Gerard Butler', 'Michael Vartan', 'Matt Damon', 'Nicolas Cage']
+# actresses = ['Cheryl Hines', 'Selena Gomez', 'Angie Harmon', 'Anne Hathaway', 'Jennifer Aniston']
+actors = ['Jennifer Aniston']
+actresses = []
 
 for a in actors:
 # change to actresses
     name = a.split()[1].lower()
     i = 1
     act_imgset = []
-    with open("facescrub_actors.txt") as f:
+    with open("facescrub_actresses.txt") as f:
     #change to actresses
-        while i <= 100:
+        while i <= 120:
             line = f.readline()
             if a in line:
                 filename = name + '_' + str(i) + '.' + line.split()[4].split('.')[-1]
@@ -90,7 +91,7 @@ for a in actors:
 
 # Repeat with actresses before this step
 
-savemat("image_set", image_set)
+savemat("image_set2", image_set)
 
 
 

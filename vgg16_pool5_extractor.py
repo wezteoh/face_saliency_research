@@ -1,6 +1,9 @@
 import numpy as np
 import tensorflow as tf
 
+from scipy.io import savemat
+from scipy.io import loadmat
+
 class vgg16_extractor:
     def __init__(self, imgs, weights=None, sess=None, train_indicator=False):
         self.imgs = imgs
@@ -209,7 +212,7 @@ class vgg16_extractor:
 feature_maps = {}
             
 if __name__ == '__main__':
-    image_set = loadmat('data/image_set.mat')
+    image_set = loadmat('data/image_set_16faces.mat')
     del image_set['__header__']
     del image_set['__version__']
     del image_set['__globals__']
@@ -228,4 +231,4 @@ if __name__ == '__main__':
                 feature_maps[artist] = np.concatenate((feature_maps[artist], sess.run(f_maps, feed_dict={inputs: batch})),axis=0)
                 print(str((i+1)*100/(image_set[artist].shape[0]/batch_size)) + '% completed for ' + str(artist)) 
                 
-        savemat('data/vgg_pool5_outputs_2', feature_maps)
+        savemat('data/vgg_pool5_outputs_16faces.mat', feature_maps)
